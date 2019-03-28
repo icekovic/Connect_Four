@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
+using System;
 
 namespace ConnectFour
 {
@@ -30,7 +31,12 @@ namespace ConnectFour
         [SerializeField]
 		private bool allowDiagonally;
 
-		public GameObject winningText;
+        private GameObject gameObjectField;
+        private GameObject gameObjectTurn;
+        private Flags flags;
+        private Camera mainCamera;
+
+        public GameObject winningText;
 		public string playerWonText = "You Won!";
 		public string playerLoseText = "You Lose!";
 		public string drawText = "Draw!";
@@ -40,18 +46,7 @@ namespace ConnectFour
 		Color btnPlayAgainOrigColor;
 		Color btnPlayAgainHoverColor = new Color(255, 143,4);
 
-		GameObject gameObjectField;
-
-		// temporary gameobject, holds the piece at mouse position until the mouse has clicked
-		GameObject gameObjectTurn;
-
-		/// <summary>
-		/// The Game field.
-		/// 0 = Empty
-		/// 1 = Blue
-		/// 2 = Red
-		/// </summary>
-		int[,] field;
+		private int[,] field;
 
 		bool isPlayersTurn = true;
 		bool isLoading = true;
@@ -61,25 +56,87 @@ namespace ConnectFour
 		bool gameOver = false;
 		bool isCheckingForWinner = false;
 
-		// Use this for initialization
-		void Start () 
+        private void Awake()
+        {
+            flags = FindObjectOfType<Flags>();
+            mainCamera = Camera.main;
+        }
+
+        void Start () 
 		{
 			int max = Mathf.Max (numRows, numColumns);
 
 			if(numPiecesToWin > max)
 				numPiecesToWin = max;
 
-			CreateField ();
+			CreateBoard();
 
-			isPlayersTurn = System.Convert.ToBoolean(Random.Range (0, 1));
+			isPlayersTurn = System.Convert.ToBoolean(UnityEngine.Random.Range (0, 1));
 
 			btnPlayAgainOrigColor = btnPlayAgain.GetComponent<Renderer>().material.color;
 		}
 
-		/// <summary>
-		/// Creates the field.
-		/// </summary>
-		void CreateField()
+        // Update is called once per frame
+        private void Update()
+        {
+            if (isLoading)
+                return;
+
+            if (isCheckingForWinner)
+                return;
+
+            if (gameOver)
+            {
+                winningText.SetActive(true);
+                btnPlayAgain.SetActive(true);
+
+                UpdatePlayAgainButton();
+
+                return;
+            }
+
+            if (isPlayersTurn)
+            {
+                if (gameObjectTurn == null)
+                {
+                    gameObjectTurn = SpawnPiece();
+                }
+                else
+                {
+                    // update the objects position
+                    Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    gameObjectTurn.transform.position = new Vector3(
+                        Mathf.Clamp(pos.x, 0, numColumns - 1),
+                        gameObjectField.transform.position.y + 1, 0);
+
+                    // click the left mouse button to drop the piece into the selected column
+                    if (Input.GetMouseButtonDown(0) && !mouseButtonPressed && !isDropping)
+                    {
+                        mouseButtonPressed = true;
+
+                        StartCoroutine(dropPiece(gameObjectTurn));
+                    }
+                    else
+                    {
+                        mouseButtonPressed = false;
+                    }
+                }
+            }
+            else
+            {
+                if (gameObjectTurn == null)
+                {
+                    gameObjectTurn = SpawnPiece();
+                }
+                else
+                {
+                    if (!isDropping)
+                        StartCoroutine(dropPiece(gameObjectTurn));
+                }
+            }
+        }
+
+        private void CreateBoard()
 		{
 			winningText.SetActive(false);
 			btnPlayAgain.SetActive(false);
@@ -108,9 +165,8 @@ namespace ConnectFour
 			isLoading = false;
 			gameOver = false;
 
-			// center camera
-			Camera.main.transform.position = new Vector3(
-				(numColumns-1) / 2.0f, -((numRows-1) / 2.0f), Camera.main.transform.position.z);
+            // center camera
+            CenterCamera();			
 
 			winningText.transform.position = new Vector3(
 				(numColumns-1) / 2.0f, -((numRows-1) / 2.0f) + 1, winningText.transform.position.z);
@@ -119,11 +175,12 @@ namespace ConnectFour
 				(numColumns-1) / 2.0f, -((numRows-1) / 2.0f) - 1, btnPlayAgain.transform.position.z);
 		}
 
-		/// <summary>
-		/// Spawns a piece at mouse position above the first row
-		/// </summary>
-		/// <returns>The piece.</returns>
-		GameObject SpawnPiece()
+        private void CenterCamera()
+        {
+            mainCamera.transform.position = new Vector3((numColumns - 1) / 2.0f, -((numRows - 1) / 2.0f), Camera.main.transform.position.z);
+        }
+
+        private GameObject SpawnPiece()
 		{
 			Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 					
@@ -133,7 +190,7 @@ namespace ConnectFour
 
 				if(moves.Count > 0)
 				{
-					int column = moves[Random.Range (0, moves.Count)];
+					int column = moves[UnityEngine.Random.Range (0, moves.Count)];
 
 					spawnPos = new Vector3(column, 0, 0);
 				}
@@ -149,7 +206,7 @@ namespace ConnectFour
 			return g;
 		}
 
-		void UpdatePlayAgainButton()
+		private void UpdatePlayAgainButton()
 		{
 			RaycastHit hit;
 			//ray shooting out of the camera from where the mouse is
@@ -178,70 +235,6 @@ namespace ConnectFour
 			}
 		}
 
-		// Update is called once per frame
-		void Update () 
-		{
-			if(isLoading)
-				return;
-
-			if(isCheckingForWinner)
-				return;
-
-			if(gameOver)
-			{
-				winningText.SetActive(true);
-				btnPlayAgain.SetActive(true);
-
-				UpdatePlayAgainButton();
-
-				return;
-			}
-
-			if(isPlayersTurn)
-			{
-				if(gameObjectTurn == null)
-				{
-					gameObjectTurn = SpawnPiece();
-				}
-				else
-				{
-					// update the objects position
-					Vector3 pos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-					gameObjectTurn.transform.position = new Vector3(
-						Mathf.Clamp(pos.x, 0, numColumns-1), 
-						gameObjectField.transform.position.y + 1, 0);
-
-					// click the left mouse button to drop the piece into the selected column
-					if(Input.GetMouseButtonDown(0) && !mouseButtonPressed && !isDropping)
-					{
-						mouseButtonPressed= true;
-
-						StartCoroutine(dropPiece(gameObjectTurn));
-					}
-					else
-					{
-						mouseButtonPressed = false;
-					}
-				}
-			}
-			else
-			{
-				if(gameObjectTurn == null)
-				{
-					gameObjectTurn = SpawnPiece();
-				}
-				else
-				{
-					if(!isDropping)
-						StartCoroutine(dropPiece(gameObjectTurn));
-				}
-			}
-		}
-
-		/// <summary>
-		/// Gets all the possible moves.
-		/// </summary>
-		/// <returns>The possible moves.</returns>
 		public List<int> GetPossibleMoves()
 		{
 			List<int> possibleMoves = new List<int>();
@@ -259,12 +252,7 @@ namespace ConnectFour
 			return possibleMoves;
 		}
 
-		/// <summary>
-		/// This method searches for a empty cell and lets 
-		/// the object fall down into this cell
-		/// </summary>
-		/// <param name="gObject">Game Object.</param>
-		IEnumerator dropPiece(GameObject gObject)
+		private IEnumerator dropPiece(GameObject gObject)
 		{
 			isDropping = true;
 
@@ -326,10 +314,7 @@ namespace ConnectFour
 			yield return 0;
 		}
 
-		/// <summary>
-		/// Check for Winner
-		/// </summary>
-		IEnumerator Won()
+		private IEnumerator Won()
 		{
 			isCheckingForWinner = true;
 
@@ -411,7 +396,6 @@ namespace ConnectFour
 				yield return null;
 			}
 
-			// if Game Over update the winning text to show who has won
 			if(gameOver == true)
 			{
 				winningText.GetComponent<TextMesh>().text = isPlayersTurn ? playerWonText : playerLoseText;
@@ -431,11 +415,7 @@ namespace ConnectFour
 			yield return 0;
 		}
 
-		/// <summary>
-		/// check if the field contains an empty cell
-		/// </summary>
-		/// <returns><c>true</c>, if it contains empty cell, <c>false</c> otherwise.</returns>
-		bool FieldContainsEmptyCell()
+		private bool FieldContainsEmptyCell()
 		{
 			for(int x = 0; x < numColumns; x++)
 			{
