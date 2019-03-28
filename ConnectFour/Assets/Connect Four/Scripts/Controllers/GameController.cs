@@ -80,7 +80,7 @@ namespace ConnectFour
             {
                 if (gameObjectTurn == null)
                 {
-                    gameObjectTurn = SpawnPiece();
+                    gameObjectTurn = SpawnChip();
                 }
                 else
                 {
@@ -106,7 +106,7 @@ namespace ConnectFour
             {
                 if (gameObjectTurn == null)
                 {
-                    gameObjectTurn = SpawnPiece();
+                    gameObjectTurn = SpawnChip();
                 }
                 else
                 {
@@ -152,7 +152,7 @@ namespace ConnectFour
             mainCamera.transform.position = new Vector3((numColumns - 1) / 2.0f, -((numRows - 1) / 2.0f), Camera.main.transform.position.z);
         }
 
-        private GameObject SpawnPiece()
+        private GameObject SpawnChip()
 		{
 			Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             if(!flags.GetIsPlayersTurn())
@@ -273,7 +273,6 @@ namespace ConnectFour
                     int layermask = flags.GetIsPlayersTurn() ? (1 << 8) : (1 << 9);
 
                     // If its Players turn ignore red as Starting piece and wise versa
-                    //if (field[x, y] != (isPlayersTurn ? (int)Piece.Blue : (int)Piece.Red))
                     if (field[x, y] != (flags.GetIsPlayersTurn() ? (int)Piece.Blue : (int)Piece.Red))
 					{
 						continue;
