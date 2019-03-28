@@ -37,25 +37,7 @@ namespace ConnectFour
         private CanvasMessageManager messageManager;
         private Camera mainCamera;
 
-        public GameObject winningText;
-		public string playerWonText = "You Won!";
-		public string playerLoseText = "You Lose!";
-		public string drawText = "Draw!";
-
-		public GameObject btnPlayAgain;
-		bool btnPlayAgainTouching = false;
-		Color btnPlayAgainOrigColor;
-		Color btnPlayAgainHoverColor = new Color(255, 143,4);
-
 		private int[,] field;
-
-		//bool isPlayersTurn = true;
-		//bool isLoading = true;
-		//bool isDropping = false; 
-		//bool mouseButtonPressed = false;
-
-		//bool gameOver = false;
-		//bool isCheckingForWinner = false;
 
         private void Awake()
         {
@@ -69,39 +51,31 @@ namespace ConnectFour
 			int max = Mathf.Max (numRows, numColumns);
 
 			if(numPiecesToWin > max)
-				numPiecesToWin = max;
+            {
+                numPiecesToWin = max;
+            }				
 
 			CreateBoard();
-
-            //isPlayersTurn = System.Convert.ToBoolean(UnityEngine.Random.Range (0, 1));
             flags.ConvertIsPlayersTurnToBoolean();
-
-			btnPlayAgainOrigColor = btnPlayAgain.GetComponent<Renderer>().material.color;
 		}
 
-        // Update is called once per frame
         private void Update()
         {
-            //if (isLoading)
             if(flags.GetIsLoading())
-                return;
-
-            //if (isCheckingForWinner)
-            if (flags.GetIsCheckingForWinner())
-                return;
-
-            //if (gameOver)
-            if(flags.GetGameOver())
             {
-                winningText.SetActive(true);
-                btnPlayAgain.SetActive(true);
+                return;
+            }               
 
-                UpdatePlayAgainButton();
-
+            if (flags.GetIsCheckingForWinner())
+            {
                 return;
             }
 
-            //if (isPlayersTurn)
+            if(flags.GetGameOver())
+            {
+                return;
+            }
+
             if(flags.GetIsPlayersTurn())
             {
                 if (gameObjectTurn == null)
@@ -117,18 +91,14 @@ namespace ConnectFour
                         gameObjectField.transform.position.y + 1, 0);
 
                     // click the left mouse button to drop the piece into the selected column
-                    //if (Input.GetMouseButtonDown(0) && !mouseButtonPressed && !isDropping)
                     if(Input.GetMouseButtonDown(0) && !flags.GetMouseButtonPressed() && !flags.GetIsDropping())
                     {
-                        //mouseButtonPressed = true;
                         flags.SetIsMouseButtonPressedTrue();
-
-                        StartCoroutine(dropPiece(gameObjectTurn));
+                        StartCoroutine(DropPiece(gameObjectTurn));
                     }
                     else
                     {
                         flags.SetIsMouseButtonPressedFalse();
-                        //mouseButtonPressed = false;
                     }
                 }
             }
@@ -140,20 +110,17 @@ namespace ConnectFour
                 }
                 else
                 {
-                    //if (!isDropping)
                     if(!flags.GetIsDropping())
-                        StartCoroutine(dropPiece(gameObjectTurn));
+                    {
+                        StartCoroutine(DropPiece(gameObjectTurn));
+                    }                        
                 }
             }
         }
 
         private void CreateBoard()
 		{
-			winningText.SetActive(false);
-			btnPlayAgain.SetActive(false);
-
             flags.SetIsLoadingTrue();
-			//isLoading = true;
 
 			gameObjectField = GameObject.Find ("Field");
 			if(gameObjectField != null)
@@ -176,17 +143,8 @@ namespace ConnectFour
 
             flags.SetIsLoadingFalse();
             flags.SetGameOverFalse();
-			//isLoading = false;
-			//gameOver = false;
 
-            // center camera
-            CenterCamera();			
-
-			winningText.transform.position = new Vector3(
-				(numColumns-1) / 2.0f, -((numRows-1) / 2.0f) + 1, winningText.transform.position.z);
-
-			btnPlayAgain.transform.position = new Vector3(
-				(numColumns-1) / 2.0f, -((numRows-1) / 2.0f) - 1, btnPlayAgain.transform.position.z);
+            CenterCamera();		
 		}
 
         private void CenterCamera()
@@ -197,8 +155,6 @@ namespace ConnectFour
         private GameObject SpawnPiece()
 		{
 			Vector3 spawnPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-					
-			//if(!isPlayersTurn)
             if(!flags.GetIsPlayersTurn())
 			{
 				List<int> moves = GetPossibleMoves();
@@ -206,50 +162,18 @@ namespace ConnectFour
 				if(moves.Count > 0)
 				{
 					int column = moves[UnityEngine.Random.Range (0, moves.Count)];
-
 					spawnPos = new Vector3(column, 0, 0);
 				}
 			}
 
 			GameObject g = Instantiate(
                     flags.GetIsPlayersTurn() ? yellowChipPrefab : redChipPrefab, // is players turn = spawn blue, else spawn red
-                    //isPlayersTurn ? yellowChipPrefab : redChipPrefab, // is players turn = spawn blue, else spawn red
 					new Vector3(
 					Mathf.Clamp(spawnPos.x, 0, numColumns-1), 
 					gameObjectField.transform.position.y + 1, 0), // spawn it above the first row
 					Quaternion.identity) as GameObject;
 
 			return g;
-		}
-
-		private void UpdatePlayAgainButton()
-		{
-			RaycastHit hit;
-			//ray shooting out of the camera from where the mouse is
-			Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-			
-			if (Physics.Raycast(ray, out hit) && hit.collider.name == btnPlayAgain.name)
-			{
-				btnPlayAgain.GetComponent<Renderer>().material.color = btnPlayAgainHoverColor;
-				//check if the left mouse has been pressed down this frame
-				if (Input.GetMouseButtonDown(0) || Input.touchCount > 0 && btnPlayAgainTouching == false)
-				{
-					btnPlayAgainTouching = true;
-
-                    //CreateField();
-                    //Application.LoadLevel(0);
-                    messageManager.PlayAgain();
-				}
-			}
-			else
-			{
-				btnPlayAgain.GetComponent<Renderer>().material.color = btnPlayAgainOrigColor;
-			}
-			
-			if(Input.touchCount == 0)
-			{
-				btnPlayAgainTouching = false;
-			}
 		}
 
 		public List<int> GetPossibleMoves()
@@ -269,10 +193,9 @@ namespace ConnectFour
 			return possibleMoves;
 		}
 
-		private IEnumerator dropPiece(GameObject gObject)
+		private IEnumerator DropPiece(GameObject gObject)
 		{
             flags.SetIsDroppingTrue();
-			//isDropping = true;
 
 			Vector3 startPosition = gObject.transform.position;
 			Vector3 endPosition = new Vector3();
@@ -322,16 +245,15 @@ namespace ConnectFour
 				StartCoroutine(Won());
 
 				// wait until winning check is done
-				//while(isCheckingForWinner)
                 while(flags.GetIsCheckingForWinner())
-					yield return null;
+                {
+                    yield return null;
+                }					
 
                 flags.InvertIsPlayersTurn();
-				//isPlayersTurn = !isPlayersTurn;
 			}
 
             flags.SetIsDroppingFalse();
-			//isDropping = false;
 
 			yield return 0;
 		}
@@ -339,7 +261,6 @@ namespace ConnectFour
 		private IEnumerator Won()
 		{
             flags.SetIsCheckingForWinnerTrue();
-			//isCheckingForWinner = true;
 
 			for(int x = 0; x < numColumns; x++)
 			{
@@ -368,7 +289,6 @@ namespace ConnectFour
 					// return true (won) if enough hits
 					if(hitsHorz.Length == numPiecesToWin - 1)
 					{
-						//gameOver = true;
                         flags.SetGameOverTrue();
 						break;
 					}
@@ -382,7 +302,6 @@ namespace ConnectFour
 					
 					if(hitsVert.Length == numPiecesToWin - 1)
 					{
-						//gameOver = true;
                         flags.SetGameOverTrue();
 						break;
 					}
@@ -401,7 +320,6 @@ namespace ConnectFour
 						
 						if(hitsDiaLeft.Length == numPiecesToWin - 1)
 						{
-							//gameOver = true;
                             flags.SetGameOverTrue();
 							break;
 						}
@@ -426,24 +344,28 @@ namespace ConnectFour
 				yield return null;
 			}
 
-			//if(gameOver == true)
             if(flags.GetGameOver() == true)
 			{
-				//winningText.GetComponent<TextMesh>().text = isPlayersTurn ? playerWonText : playerLoseText;
-                winningText.GetComponent<TextMesh>().text = flags.GetIsPlayersTurn() ? playerWonText : playerLoseText;
+                if(flags.GetIsPlayersTurn())
+                {
+                    messageManager.ShowPlayerWonMessage();
+                }
+
+                else if(!flags.GetIsPlayersTurn())
+                {
+                    messageManager.ShowComputerWonMessage();
+                }
             }
 			else 
 			{
 				// check if there are any empty cells left, if not set game over and update text to show a draw
 				if(!FieldContainsEmptyCell())
 				{
-					//gameOver = true;
                     flags.SetGameOverTrue();
-					winningText.GetComponent<TextMesh>().text = drawText;
+                    messageManager.ShowDrawMessage();
 				}
 			}
 
-			//isCheckingForWinner = false;
             flags.SetIsCheckingForWinnerFalse();
 
 			yield return 0;
