@@ -34,6 +34,7 @@ namespace ConnectFour
         private GameObject gameObjectField;
         private GameObject gameObjectTurn;
         private Flags flags;
+        private CanvasMessageManager messageManager;
         private Camera mainCamera;
 
         public GameObject winningText;
@@ -59,6 +60,7 @@ namespace ConnectFour
         private void Awake()
         {
             flags = FindObjectOfType<Flags>();
+            messageManager = FindObjectOfType<CanvasMessageManager>();
             mainCamera = Camera.main;
         }
 
@@ -233,9 +235,10 @@ namespace ConnectFour
 				if (Input.GetMouseButtonDown(0) || Input.touchCount > 0 && btnPlayAgainTouching == false)
 				{
 					btnPlayAgainTouching = true;
-					
-					//CreateField();
-					Application.LoadLevel(0);
+
+                    //CreateField();
+                    //Application.LoadLevel(0);
+                    messageManager.PlayAgain();
 				}
 			}
 			else
