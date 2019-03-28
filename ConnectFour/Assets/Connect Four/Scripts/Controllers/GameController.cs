@@ -6,30 +6,29 @@ namespace ConnectFour
 {
 	public class GameController : MonoBehaviour 
 	{
-		enum Piece
-		{
-			Empty = 0,
-			Blue = 1,
-			Red = 2
-		}
+        [SerializeField]
+        public GameObject fieldPrefab;
 
-		[Range(3, 8)]
-		public int numRows = 6;
-		[Range(3, 8)]
-		public int numColumns = 7;
+        [SerializeField]
+        private GameObject redChipPrefab;
 
-		[Tooltip("How many pieces have to be connected to win.")]
-		public int numPiecesToWin = 4;
+        [SerializeField]
+        public GameObject yellowChipPrefab;
 
-		[Tooltip("Allow diagonally connected Pieces?")]
-		public bool allowDiagonally = true;
-		
-		public float dropTime = 4f;
+        [SerializeField]
+		private int numRows;
 
-		// Gameobjects 
-		public GameObject pieceRed;
-		public GameObject pieceBlue;
-		public GameObject pieceField;
+		[SerializeField]
+		private int numColumns;
+
+		[SerializeField]
+		private int numPiecesToWin;
+
+        [SerializeField]
+        private float dropTime;
+
+        [SerializeField]
+		private bool allowDiagonally;
 
 		public GameObject winningText;
 		public string playerWonText = "You Won!";
@@ -101,7 +100,7 @@ namespace ConnectFour
 				for(int y = 0; y < numRows; y++)
 				{
 					field[x, y] = (int)Piece.Empty;
-					GameObject g = Instantiate(pieceField, new Vector3(x, y * -1, -1), Quaternion.identity) as GameObject;
+					GameObject g = Instantiate(fieldPrefab, new Vector3(x, y * -1, -1), Quaternion.identity) as GameObject;
 					g.transform.parent = gameObjectField.transform;
 				}
 			}
@@ -141,7 +140,7 @@ namespace ConnectFour
 			}
 
 			GameObject g = Instantiate(
-					isPlayersTurn ? pieceBlue : pieceRed, // is players turn = spawn blue, else spawn red
+					isPlayersTurn ? yellowChipPrefab : redChipPrefab, // is players turn = spawn blue, else spawn red
 					new Vector3(
 					Mathf.Clamp(spawnPos.x, 0, numColumns-1), 
 					gameObjectField.transform.position.y + 1, 0), // spawn it above the first row
@@ -448,5 +447,10 @@ namespace ConnectFour
 			}
 			return false;
 		}
+
+        public int GetNumberOfRows()
+        {
+            return numRows;
+        }
 	}
 }
